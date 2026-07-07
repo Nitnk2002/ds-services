@@ -8,6 +8,17 @@ class MessageService:
     
     def process_message(self, message):
         if self.messageUtil.isBankSms(message):
-            return self.llmService.runLLM(message)
+            result = self.llmService.runLLM(message)
+            msg_lower = message.lower()
+            if result and result.amount:
+                # If it's an expense, make the amount negative
+                if "spent" in msg_lower or "debited" in msg_lower or "sent" in msg_lower:
+                    if not result.amount.startswith("-"):
+                        result.amount = "-" + result.amount
+                # If it's income, make sure it's positive
+                elif "received" in msg_lower or "credited" in msg_lower:
+                    if result.amount.startswith("-"):
+                        result.amount = result.amount[1:]
+            return result
         else:
             return None
